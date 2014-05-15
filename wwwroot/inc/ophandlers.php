@@ -321,6 +321,7 @@ $opspec_list['chapter-edit-add'] = array
 	(
 		array ('url_argname' => 'chapter_no', 'table_colname' => 'chapter_id', 'assertion' => 'uint'),
 		array ('url_argname' => 'dict_value', 'assertion' => 'string'),
+		array ('url_argname' => 'dict_display', 'assertion' => 'check/yesno'),
 	),
 );
 $opspec_list['chapter-edit-del'] = array
@@ -344,6 +345,7 @@ $opspec_list['chapter-edit-upd'] = array
 	'set_arglist' => array
 	(
 		array ('url_argname' => 'dict_value', 'assertion' => 'string'),
+		array ('url_argname' => 'dict_display', 'assertion' => 'check/yesno'),
 	),
 	'where_arglist' => array
 	(
@@ -3363,6 +3365,7 @@ function buildOpspecColumns ($opspec, $listname)
 		switch (TRUE)
 		{
 		case array_key_exists ('url_argname', $argspec): # HTTP input
+			//this seems to mostly just validate the values.
 			genericAssertion ($argspec['url_argname'], $argspec['assertion']);
 			// "table_colname" is normally used for an override, if it is not
 			// set, use the URL argument name
@@ -3370,11 +3373,10 @@ function buildOpspecColumns ($opspec, $listname)
 				$argspec['table_colname'] :
 				$argspec['url_argname'];
 			$arg_value = $sic[$argspec['url_argname']];
-			if
-			(
-				($argspec['assertion'] == 'uint0' and $arg_value == 0)
-				or ($argspec['assertion'] == 'string0' and $arg_value == '')
-			)
+			//add case for "check/yesno" and to genericAssertion as well
+			if(($argspec['assertion'] == 'uint0' and $arg_value == 0)
+				or ($argspec['assertion'] == 'string0' and $arg_value == ''))
+			{
 				switch (TRUE)
 				{
 				case !array_key_exists ('if_empty', $argspec): // no action requested
@@ -3385,6 +3387,11 @@ function buildOpspecColumns ($opspec, $listname)
 				default:
 					throw new InvalidArgException ('opspec', '(malformed array structure)', '"if_empty" not recognized');
 				}
+			}
+			else if ($argspec['assertion'] == 'check/yesno')
+			{
+				$arg_value = isCheckSet($arg_value,'yesno');
+			}
 			$columns[$table_colname] = $arg_value;
 			break;
 		case array_key_exists ('fix_argname', $argspec): # fixed column

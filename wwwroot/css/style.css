@@ -1,0 +1,35 @@
+
+.dictionary_main{
+	padding-top: 15px;
+	padding-left: 25px;
+	font-size: 125%;
+}
+
+.dictionary_entry{
+	
+}
+
+.dictionary_table{
+
+}
+
+.chapter_name{
+	float: left;
+	min-width: 200px;
+}
+
+.chapter_words{
+	float: left;
+}
+
+.chapter_actions{
+	float: left;
+}
+
+.title{
+	font-weight: bold;
+}
+
+.icon{
+	margin: 5px;
+}

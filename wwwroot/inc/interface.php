@@ -9,7 +9,6 @@
 *  This file contains frontend functions for RackTables.
 *
 */
-
 require_once 'ajax-interface.php';
 require_once 'slb-interface.php';
 
@@ -3422,7 +3421,7 @@ function renderNATv4ForObject ($object_id)
 function renderAddMultipleObjectsForm ()
 {
 	$typelist = readChapter (CHAP_OBJTYPE, 'o');
-	$typelist[0] = 'select type...';
+	$typelist[0] = array('value' => 'select type...', 'display' => 'yes');
 	$typelist = cookOptgroups ($typelist);
 	$max = getConfigVar ('MASSCOUNT');
 	$tabindex = 100;
@@ -4182,10 +4181,10 @@ function renderRackPage ($rack_id)
 
 function renderDictionary ()
 {
-	echo '<ul>';
+	echo '<div class=dictionary_main>';
 	foreach (getChapterList() as $chapter_no => $chapter)
-		echo '<li>' . mkA ($chapter['name'], 'chapter', $chapter_no) . " (${chapter['wordc']} records)</li>";
-	echo '</ul>';
+		echo '<div class=dictionary_entry>' . mkA ($chapter['name'], 'chapter', $chapter_no) . " (${chapter['wordc']} records)</div>";
+	echo '</div>';
 }
 
 function renderChapter ($tgt_chapter_no)
@@ -4201,8 +4200,8 @@ function renderChapter ($tgt_chapter_no)
 	$refcnt = getChapterRefc ($tgt_chapter_no, array_keys ($words));
 	$attrs = getChapterAttributes($tgt_chapter_no);
 	echo "<br><table class=cooltable border=0 cellpadding=5 cellspacing=0 align=center>\n";
-	echo "<tr><th colspan=4>${wc} record(s)</th></tr>\n";
-	echo "<tr><th>Origin</th><th>Key</th><th>Refcnt</th><th>Word</th></tr>\n";
+	echo "<tr><th colspan=5>${wc} record(s)</th></tr>\n";
+	echo "<tr><th>Origin</th><th>Key</th><th>Refcnt</th><th>Word</th><th>Hide</th></tr>\n";
 	$order = 'odd';
 	foreach ($words as $key => $value)
 	{
@@ -4236,7 +4235,7 @@ function renderChapter ($tgt_chapter_no)
 			else
 				echo $refcnt[$key];
 		}
-		echo "</td><td>${value}</td></tr>\n";
+		echo "</td><td>".$value['value']."</td><td><input type='checkbox' disabled ".(strcasecmp($value['display'],"yes")==0?'':'checked')."></td></tr>\n";
 		$order = $nextorder[$order];
 	}
 	echo "</table>\n<br>";
@@ -4248,10 +4247,9 @@ function renderChapterEditor ($tgt_chapter_no)
 	function printNewItemTR ()
 	{
 		printOpFormIntro ('add');
-		echo '<tr><td>&nbsp;</td><td>&nbsp;</td><td>';
-		printImageHREF ('add', 'Add new', TRUE);
-		echo "</td>";
+		echo '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>';
 		echo "<td class=tdleft><input type=text name=dict_value size=64 tabindex=100></td><td>";
+		echo "<input type=checkbox name=dict_display size=64></td><td>";
 		printImageHREF ('add', 'Add new', TRUE, 101);
 		echo '</td></tr></form>';
 	}
@@ -4259,7 +4257,7 @@ function renderChapterEditor ($tgt_chapter_no)
 	$words = readChapter ($tgt_chapter_no);
 	$refcnt = getChapterRefc ($tgt_chapter_no, array_keys ($words));
 	$order = 'odd';
-	echo "<tr><th>Origin</th><th>Key</th><th>&nbsp;</th><th>Word</th><th>&nbsp;</th></tr>\n";
+	echo "<tr><th>Origin</th><th>Key</th><th>&nbsp;</th><th>Word</th><th>Hide</th><th>&nbsp;</th></tr>\n";
 	if (getConfigVar ('ADDNEW_AT_TOP') == 'yes')
 		printNewItemTR();
 	foreach ($words as $key => $value)
@@ -4267,22 +4265,25 @@ function renderChapterEditor ($tgt_chapter_no)
 		echo "<tr class=row_${order}><td>";
 		$order = $nextorder[$order];
 		// Show plain row for stock records, render a form for user's ones.
+		printOpFormIntro ('upd', array ('dict_key' => $key));
 		if ($key < 50000)
 		{
 			printImageHREF ('computer');
-			echo "</td><td>${key}</td><td>&nbsp;</td><td>${value}</td><td>&nbsp;</td></tr>";
-			continue;
+			echo "</td><td>${key}</td><td>&nbsp;</td><td>${value['value']}</td><td>";
 		}
-		printOpFormIntro ('upd', array ('dict_key' => $key));
-		printImageHREF ('favorite');
-		echo "</td><td>${key}</td><td>";
-		// Prevent deleting words currently used somewhere.
-		if ($refcnt[$key])
-			printImageHREF ('nodelete', 'referenced ' . $refcnt[$key] . ' time(s)');
 		else
-			echo getOpLink (array('op'=>'del', 'dict_key'=>$key), '', 'delete', 'Delete word');
-		echo '</td>';
-		echo "<td class=tdleft><input type=text name=dict_value size=64 value='${value}'></td><td>";
+		{
+			printImageHREF ('favorite');
+			echo "</td><td>${key}</td><td>";
+			// Prevent deleting words currently used somewhere.
+			if ($refcnt[$key])
+				printImageHREF ('nodelete', 'referenced ' . $refcnt[$key] . ' time(s)');
+			else
+				echo getOpLink (array('op'=>'del', 'dict_key'=>$key), '', 'delete', 'Delete word');
+			echo '</td>';
+			echo "<td class=tdleft><input type=text name=dict_value size=64 value='${value['value']}'></td><td>";
+		}
+		echo "<input type='checkbox' name=dict_display ".(strcasecmp($value['display'],"yes")==0?'':'checked')."></td><td>";
 		printImageHREF ('save', 'Save changes', TRUE);
 		echo "</td></tr></form>";
 	}
@@ -4293,7 +4294,8 @@ function renderChapterEditor ($tgt_chapter_no)
 
 // We don't allow to rename/delete a sticky chapter and we don't allow
 // to delete a non-empty chapter.
-function renderChaptersEditor ()
+// This is also known as the dictionary editor
+/* function renderChaptersEditor ()
 {
 	function printNewItemTR ()
 	{
@@ -4311,8 +4313,8 @@ function renderChaptersEditor ()
 		if ($attrinfo['type'] == 'dict')
 			foreach ($attrinfo['application'] as $app)
 				$dict[$app['chapter_no']]['mapped'] = TRUE;
-	echo "<table cellspacing=0 cellpadding=5 align=center class=widetable>\n";
-	echo '<tr><th>&nbsp;</th><th>Chapter name</th><th>Words</th><th>&nbsp;</th></tr>';
+	echo "<div class=dictionary_table>\n";
+	echo '<div class="chapter_name title">Chapter Name</div><div class="chapter_words title">Words</div><div class="chapter_actions title">&nbsp;</div>';
 	if (getConfigVar ('ADDNEW_AT_TOP') == 'yes')
 		printNewItemTR();
 	foreach ($dict as $chapter_id => $chapter)
@@ -4337,6 +4339,65 @@ function renderChaptersEditor ()
 			echo '&nbsp;';
 		else
 			printImageHREF ('save', 'Save changes', TRUE);
+		echo '</td></tr>';
+		echo '</form>';
+	}
+	if (getConfigVar ('ADDNEW_AT_TOP') != 'yes')
+		printNewItemTR();
+	echo "</div>\n";
+}
+ */
+function renderChaptersEditor ()
+{
+	function printNewItemTR ()
+	{
+		printOpFormIntro ('add');
+		echo '<tr>';//<td>';
+		//printImageHREF ('create', 'Add new', TRUE);
+		echo "<td><input type=text name=chapter_name tabindex=100></td><td>&nbsp;</td><td>";
+		printImageHREF ('create', 'Add new', TRUE, 101);
+		echo '</td></tr></form>';
+	}
+	$dict = getChapterList();
+	foreach (array_keys ($dict) as $chapter_no)
+		$dict[$chapter_no]['mapped'] = FALSE;
+	foreach (getAttrMap() as $attrinfo)
+		if ($attrinfo['type'] == 'dict')
+			foreach ($attrinfo['application'] as $app)
+				$dict[$app['chapter_no']]['mapped'] = TRUE;
+	echo "<table cellspacing=0 cellpadding=5 align=center class=widetable>\n";
+	echo '<tr><th>Chapter Name</th><th>Words</th><th>&nbsp;</th></tr>';
+	if (getConfigVar ('ADDNEW_AT_TOP') == 'yes')
+		printNewItemTR();
+	foreach ($dict as $chapter_id => $chapter)
+	{
+		$wordcount = $chapter['wordc'];
+		$sticky = $chapter['sticky'] == 'yes';
+		printOpFormIntro ('upd', array ('chapter_no' => $chapter_id));
+		echo '<tr>';
+		//echo '<td>';
+		//echo '</td>';
+		echo "<td><input type=text name=chapter_name value='${chapter['name']}'" . ($sticky ? ' disabled' : '') . "></td>";
+		echo "<td class=tdleft>${wordcount}</td><td>";
+		if ($sticky)
+		{
+			printImageHREF ('nodestroy', 'CANNOT DELETE: system chapter');
+		}
+		elseif ($wordcount > 0)
+		{
+			printImageHREF ('nodestroy', 'CANNOT DELETE: contains ' . $wordcount . ' word' . ($wordcount > 1 ? 's' : ''));
+			printImageHREF ('save', 'Save changes', TRUE);
+		}
+		elseif ($chapter['mapped'])
+		{
+			printImageHREF ('nodestroy', 'CANNOT DELETE: used in attribute map');
+			printImageHREF ('save', 'Save changes', TRUE);
+		}
+		else
+		{
+			echo getOpLink (array('op'=>'del', 'chapter_no'=>$chapter_id), '', 'destroy', 'Remove chapter');
+			printImageHREF ('save', 'Save changes', TRUE);
+		}
 		echo '</td></tr>';
 		echo '</form>';
 	}

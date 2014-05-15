@@ -273,6 +273,9 @@ $image['html']['height'] = 16;
 $image['pencil']['path'] = 'pix/pencil-icon.png';
 $image['pencil']['width'] = 12;
 $image['pencil']['height'] = 12;
+$image['edit']['path'] = 'pix/edit-icon-16x16.png';
+$image['edit']['width'] = 16;
+$image['edit']['height'] = 16;
 
 $page_by_realm = array();
 $page_by_realm['object'] = 'depot';
@@ -444,6 +447,7 @@ function getImageHREF ($tag, $title = '', $do_input = FALSE, $tabindex = 0)
 			"width=${img['width']} " .
 			"height=${img['height']} " .
 			"border=0 " .
+			"class=icon ".
 			(!strlen ($title) ? '' : "title='${title}'") .
 			">";
 }

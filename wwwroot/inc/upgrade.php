@@ -220,6 +220,11 @@ and re-apply the failed query.
 ENDOFTEXT
 ,
 
+	'0.20.7.1-nf' => <<<ENDOFTEXT
+Added support for hiding dictionary words.
+ENDOFTEXT
+,
+
 	'0.21.0' => <<<ENDOFTEXT
 The minimum (oldest) supported release of PHP is 5.3.
 ENDOFTEXT
@@ -268,6 +273,7 @@ function getDBUpgradePath ($v1, $v2)
 		'0.20.5',
 		'0.20.6',
 		'0.20.7',
+		'0.20.7.1-nf',
 		'0.21.0',
 	);
 	if (!in_array ($v1, $versionhistory) or !in_array ($v2, $versionhistory))
@@ -1610,6 +1616,11 @@ ENDOFTRIGGER;
 			$query[] = "SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS";
 
 			$query[] = "UPDATE Config SET varvalue = '0.20.7' WHERE varname = 'DB_VERSION'";
+			break;
+		//add customizations for the "nf" branch while picking up the customizations of the new official build version
+		case '0.20.7.1-nf':
+			$query[] = "ALTER TABLE `Dictionary` ADD COLUMN `dict_display` enum('yes','no') DEFAULT 'yes' AFTER `dict_value`";
+			$query[] = "UPDATE Config SET varvalue = '0.20.7.1-nf' WHERE varname = 'DB_VERSION'";
 			break;
 		case '0.21.0':
 			$query[] = "ALTER TABLE `VLANSTRule` CHANGE COLUMN `wrt_vlans` `wrt_vlans` text";

@@ -268,6 +268,10 @@ function isPCRE ($arg)
 function genericAssertion ($argname, $argtype)
 {
 	global $sic;
+	
+	if (!array_key_exists ($argname, $sic))
+			throw new InvalidRequestArgException ($argname, '(lost keys)');
+	
 	switch ($argtype)
 	{
 	case 'string':
@@ -357,6 +361,10 @@ function genericAssertion ($argname, $argtype)
 	case 'enum/yesno':
 		if (! in_array ($sic[$argname], array ('yes', 'no')))
 			throw new InvalidRequestArgException ($argname, $sic[$argname], 'Unknown value');
+		return $sic[$argname];
+	case 'check/yesno':
+		if (isset($sic[$argname]) && !($sic[$argname] == 'on'))
+			throw new InvalidRequestArgException ($argname, $sic[$argname], 'Unexpected checkbox value');
 		return $sic[$argname];
 	case 'iif':
 		assertUIntArg ($argname);
@@ -2787,9 +2795,9 @@ function cookOptgroups ($recordList, $object_type_id = 0, $existing_value = 0)
 	$therest = array();
 	foreach ($recordList as $dict_key => $dict_value)
 		if (preg_match ('/^(.*)%(GPASS|GSKIP)%/', $dict_value, $m))
-			$ret[$m[1]][$dict_key] = execGMarker ($dict_value);
+			$ret[$m[1]][$dict_key] = execGMarker ($dict_value['value']);
 		else
-			$therest[$dict_key] = $dict_value;
+			$therest[$dict_key] = $dict_value['value'];
 
 	// Always keep "other" OPTGROUP at the SELECT bottom.
 	$ret['other'] = $therest;
