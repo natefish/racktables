@@ -593,6 +593,7 @@ function get_pseudo_file ($name)
   `dict_key` int(10) unsigned NOT NULL auto_increment,
   `dict_sticky` enum('yes','no') DEFAULT 'no',
   `dict_value` char(255) default NULL,
+  `dict_display` enum('yes','no') DEFAULT 'yes',
   PRIMARY KEY  (`dict_key`),
   UNIQUE KEY `dict_unique` (`chapter_id`,`dict_value`,`dict_sticky`,`dict_display`),
   CONSTRAINT `Dictionary-FK-chapter_id` FOREIGN KEY (`chapter_id`) REFERENCES `Chapter` (`id`)
