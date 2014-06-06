@@ -321,7 +321,7 @@ $opspec_list['chapter-edit-add'] = array
 	(
 		array ('url_argname' => 'chapter_no', 'table_colname' => 'chapter_id', 'assertion' => 'uint'),
 		array ('url_argname' => 'dict_value', 'assertion' => 'string'),
-		array ('url_argname' => 'dict_display', 'assertion' => 'check/yesno'),
+		array ('url_argname' => 'dict_display', 'assertion' => 'enum/yesno'),
 	),
 );
 $opspec_list['chapter-edit-del'] = array
@@ -345,7 +345,7 @@ $opspec_list['chapter-edit-upd'] = array
 	'set_arglist' => array
 	(
 		array ('url_argname' => 'dict_value', 'assertion' => 'string'),
-		array ('url_argname' => 'dict_display', 'assertion' => 'check/yesno'),
+		array ('url_argname' => 'dict_display', 'assertion' => 'enum/yesno'),
 	),
 	'where_arglist' => array
 	(
@@ -2209,8 +2209,9 @@ function updateRow ()
 	assertUIntArg ('row_id');
 	assertUIntArg ('location_id', TRUE);
 	assertStringArg ('name');
-
-	commitUpdateObject ($_REQUEST['row_id'], $_REQUEST['name'], NULL, NULL, NULL, NULL);
+	
+	//'no' seems to be required by IIS as NULL causes errors
+	commitUpdateObject ($_REQUEST['row_id'], $_REQUEST['name'], NULL, 'no', NULL, NULL);
 
 	global $pageno;
 	if ($pageno == 'row')

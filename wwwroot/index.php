@@ -3,7 +3,6 @@
 # This file is a part of RackTables, a datacenter and server room management
 # framework. See accompanying file "COPYING" for the full copyright and
 # licensing information.
-include './css/style.css';
 
 ob_start();
 require_once 'inc/pre-init.php';

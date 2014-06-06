@@ -590,7 +590,7 @@ JSTXT;
 		printImageHREF ('create', 'Add new location', TRUE);
 		echo '</td><td><select name=parent_id tabindex=100>';
 		renderLocationSelectTree ();
-		echo '</td><td><input type=text size=48 name=name tabindex=101></td><td>';
+		echo '</td><td><input type=text size=48 name=name tabindex=101 autofocus></td><td>';
 		printImageHREF ('create', 'Add new location', TRUE, 102);
 		echo "</td></tr></form>\n";
 	}
@@ -619,7 +619,7 @@ function renderRackspaceRowEditor ()
 		printImageHREF ('create', 'Add new row', TRUE);
 		echo '</td><td><select name=location_id tabindex=100>';
 		renderLocationSelectTree ();
-		echo '</td><td><input type=text name=name tabindex=100></td><td>';
+		echo '</td><td><input type=text name=name tabindex=100 autofocus></td><td>';
 		printImageHREF ('create', 'Add new row', TRUE, 102);
 		echo '</td></tr></form>';
 	}
@@ -1648,7 +1648,7 @@ function renderPortsForObject ($object_id)
 		printOpFormIntro ('addPort');
 		echo "<tr><td>";
 		printImageHREF ('add', 'add a port', TRUE);
-		echo "</td><td class='tdleft'><input type=text size=8 name=port_name tabindex=100></td>\n";
+		echo "</td><td class='tdleft'><input type=text size=8 name=port_name tabindex=100 autofocus></td>\n";
 		echo "<td><input type=text name=port_label tabindex=101></td><td>";
 		printNiftySelect (getNewPortTypeOptions(), array ('name' => 'port_type_id', 'tabindex' => 102), $prefs['selected']);
 		echo "<td><input type=text name=port_l2address tabindex=103 size=18 maxlength=24></td>\n";
@@ -1827,7 +1827,7 @@ function renderIPForObject ($object_id)
 		echo "<tr><td>"; // left btn
 		printImageHREF ('add', 'allocate', TRUE);
 		echo "</td>";
-		echo "<td class=tdleft><input type='text' size='10' name='bond_name' tabindex=100></td>\n"; // if-name
+		echo "<td class=tdleft><input type='text' size='10' name='bond_name' tabindex=100 autofocus></td>\n"; // if-name
 		echo "<td class=tdleft><input type=text name='ip' tabindex=101></td>\n"; // IP
 		if (getConfigVar ('EXT_IPV4_VIEW') == 'yes')
 			echo "<td colspan=2>&nbsp;</td>"; // network, routed by
@@ -3443,7 +3443,7 @@ function renderAddMultipleObjectsForm ()
 		// Don't employ DEFAULT_OBJECT_TYPE to avoid creating ghost records for pre-selected empty rows.
 		printNiftySelect ($typelist, array ('name' => "${i}_object_type_id", 'tabindex' => $tabindex), 0);
 		echo '</td>';
-		echo "<td><input type=text size=30 name=${i}_object_name tabindex=${tabindex}></td>";
+		echo "<td><input type=text size=30 name=${i}_object_name tabindex=${tabindex} ".($tabindex==100?'autofocus':'')."></td>";
 		echo "<td><input type=text size=30 name=${i}_object_label tabindex=${tabindex}></td>";
 		echo "<td><input type=text size=20 name=${i}_object_asset_no tabindex=${tabindex}></td>";
 		if ($i == 0)
@@ -3848,7 +3848,7 @@ function renderUserListEditor ()
 		printOpFormIntro ('createUser');
 		echo '<table cellspacing=0 cellpadding=5 align=center>';
 		echo '<tr><th>&nbsp;</th><th>&nbsp;</th><th>Tags</th></tr>';
-		echo '<tr><th class=tdright>Username</th><td class=tdleft><input type=text size=64 name=username tabindex=100></td>';
+		echo '<tr><th class=tdright>Username</th><td class=tdleft><input type=text size=64 name=username tabindex=100 autofocus></td>';
 		echo '<td rowspan=4>';
 		printTagsPicker ();
 		echo '</td></tr>';
@@ -4248,8 +4248,10 @@ function renderChapterEditor ($tgt_chapter_no)
 	{
 		printOpFormIntro ('add');
 		echo '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>';
-		echo "<td class=tdleft><input type=text name=dict_value size=64 tabindex=100></td><td>";
-		echo "<input type=checkbox name=dict_display size=64></td><td>";
+		echo "<td class=tdleft><input type=text name=dict_value size=64 tabindex=100 autofocus></td><td>";
+		//this is to supply a value in the event that the 'Hide' checkbox is unchecked
+		echo "<input type=hidden name=dict_display value='yes'>";
+		echo "<input type=checkbox name=dict_display value='no' size=64></td><td>";
 		printImageHREF ('add', 'Add new', TRUE, 101);
 		echo '</td></tr></form>';
 	}
@@ -4286,7 +4288,9 @@ function renderChapterEditor ($tgt_chapter_no)
 			echo '</td>';
 			echo "<td class=tdleft><input type=text name=dict_value size=64 value='${value['value']}'></td><td>";
 		}
-		echo "<input type='checkbox' name=dict_display ".(strcasecmp($value['display'],"yes")==0?'':'checked')."></td><td>";
+		//this is to supply a value in the event that the 'Hide' checkbox is unchecked
+		echo "<input type=hidden name=dict_display value='yes'>";
+		echo "<input type='checkbox' name=dict_display value='no' ".(strcasecmp($value['display'],"yes")==0?'':'checked')."></td><td>";
 		printImageHREF ('save', 'Save changes', TRUE);
 		echo "</td></tr></form>";
 	}
@@ -4305,7 +4309,7 @@ function renderChaptersEditor ()
 		printOpFormIntro ('add');
 		echo '<tr>';//<td>';
 		//printImageHREF ('create', 'Add new', TRUE);
-		echo "<td><input type=text name=chapter_name tabindex=100></td><td>&nbsp;</td><td>";
+		echo "<td><input type=text name=chapter_name tabindex=100 autofocus></td><td>&nbsp;</td><td>";
 		printImageHREF ('create', 'Add new', TRUE, 101);
 		echo '</td></tr></form>';
 	}
@@ -4392,7 +4396,7 @@ function renderEditAttributesForm ()
 		printOpFormIntro ('add');
 		echo '<tr><td>';
 		printImageHREF ('create', 'Create attribute', TRUE);
-		echo "</td><td><input type=text tabindex=100 name=attr_name></td><td>";
+		echo "</td><td><input type=text tabindex=100 name=attr_name autofocus></td><td>";
 		global $attrtypes;
 		printSelect ($attrtypes, array ('name' => 'attr_type', 'tabindex' => 101));
 		echo '</td><td>';
@@ -4432,7 +4436,7 @@ function renderEditAttrMapForm ()
 	{
 		printOpFormIntro ('add');
 		echo '<tr><td colspan=2 class=tdleft>';
-		echo '<select name=attr_id tabindex=100>';
+		echo '<select name=attr_id tabindex=100 autofocus>';
 		$shortType['uint'] = 'U';
 		$shortType['float'] = 'F';
 		$shortType['string'] = 'S';
@@ -5112,7 +5116,7 @@ END
 		printOpFormIntro ('createTag');
 		echo '<tr>';
 		echo '<td align=left style="padding-left: 16px;">' . getImageHREF ('create', 'Create tag', TRUE) . '</td>';
-		echo '<td><input type=text size=48 name=tag_name tabindex=100></td>';
+		echo '<td><input type=text size=48 name=tag_name tabindex=100 autofocus></td>';
 		echo '<td class=tdleft>' . getSelect (array ('yes' => 'yes', 'no' => 'no'), array ('name' => 'is_assignable', 'tabindex' => 105), 'yes') . '</td>';
 		echo '<td>' . getSelect ($options, array ('name' => 'parent_id', 'tabindex' => 110)) . '</td>';
 		echo '<td>' . getImageHREF ('create', 'Create tag', TRUE, 120) . '</td>';
@@ -5772,7 +5776,7 @@ function renderFileManager ()
 		startPortlet ('Upload new');
 		printOpFormIntro ('addFile', array (), TRUE);
 		echo "<table border=0 cellspacing=0 cellpadding='5' align='center'>";
-		echo '<tr><th class=tdright>Comment:</th><td class=tdleft><textarea tabindex=101 name=comment rows=10 cols=80></textarea></td></tr>';
+		echo '<tr><th class=tdright>Comment:</th><td class=tdleft><textarea tabindex=101 name=comment rows=10 cols=80 autofocus></textarea></td></tr>';
 		echo '<tr><th class=tdright>Tags:</td><td class=tdleft>';
 		printTagsPicker ();
 		echo '</td></tr>';
@@ -6879,7 +6883,7 @@ function renderVLANDomainListEditor ()
 		echo '<tr><td>';
 		printImageHREF ('create', 'create domain', TRUE, 104);
 		echo '</td><td>';
-		echo '<input type=text size=48 name=vdom_descr tabindex=102>';
+		echo '<input type=text size=48 name=vdom_descr tabindex=102 autofocus>';
 		echo '</td><td>';
 		printImageHREF ('create', 'create domain', TRUE, 103);
 		echo '</td></tr></form>';
@@ -6979,7 +6983,7 @@ function renderVLANDomainVLANList ($vdom_id)
 		echo '<tr><td>';
 		printImageHREF ('create', 'add VLAN', TRUE, 110);
 		echo '</td><td>';
-		echo '<input type=text name=vlan_id size=4 tabindex=101>';
+		echo '<input type=text name=vlan_id size=4 tabindex=101 autofocus>';
 		echo '</td><td>';
 		printSelect ($vtoptions, array ('name' => 'vlan_type', 'tabindex' => 102), 'ondemand');
 		echo '</td><td>';
@@ -7966,7 +7970,7 @@ function renderVSTListEditor()
 		printOpFormIntro ('add');
 		echo '<tr>';
 		echo '<td>' . getImageHREF ('create', 'create template', TRUE, 104) . '</td>';
-		echo '<td><input type=text size=48 name=vst_descr tabindex=101></td>';
+		echo '<td><input type=text size=48 name=vst_descr tabindex=101 autofocus></td>';
 		echo '<td>' . getImageHREF ('create', 'create template', TRUE, 103) . '</td>';
 		echo '</tr></form>';
 	}
