@@ -1,4 +1,10 @@
 
+.disabled{
+	background-color: transparent;
+	border: none;
+	color: rgba(65, 65, 65, 1);
+}
+
 .dictionary_main{
 	padding-top: 15px;
 	padding-left: 25px;

@@ -1117,7 +1117,7 @@ function renderEditObjectForm()
 					break;
 				case 'dict':
 					$chapter = readChapter ($record['chapter_id'], 'o');
-					$chapter[0] = '-- NOT SET --';
+					$chapter[0] = array('value' => '-- NOT SET --','display' => 'yes');
 					$chapter = cookOptgroups ($chapter, $object['objtype_id'], $record['key']);
 					printNiftySelect ($chapter, array ('name' => "${i}_value"), $record['key']);
 					break;
@@ -4269,7 +4269,10 @@ function renderChapterEditor ($tgt_chapter_no)
 		if ($key < 50000)
 		{
 			printImageHREF ('computer');
-			echo "</td><td>${key}</td><td>&nbsp;</td><td>${value['value']}</td><td>";
+			echo "</td><td>${key}</td><td>&nbsp;</td>";
+//			echo "<td>${value['value']}</td><td>";
+			echo "<td class=tdleft><input class=disabled type=text name=dict_value size=64 value='${value['value']}' readonly></td><td>";
+
 		}
 		else
 		{
@@ -4295,58 +4298,6 @@ function renderChapterEditor ($tgt_chapter_no)
 // We don't allow to rename/delete a sticky chapter and we don't allow
 // to delete a non-empty chapter.
 // This is also known as the dictionary editor
-/* function renderChaptersEditor ()
-{
-	function printNewItemTR ()
-	{
-		printOpFormIntro ('add');
-		echo '<tr><td>';
-		printImageHREF ('create', 'Add new', TRUE);
-		echo "</td><td><input type=text name=chapter_name tabindex=100></td><td>&nbsp;</td><td>";
-		printImageHREF ('create', 'Add new', TRUE, 101);
-		echo '</td></tr></form>';
-	}
-	$dict = getChapterList();
-	foreach (array_keys ($dict) as $chapter_no)
-		$dict[$chapter_no]['mapped'] = FALSE;
-	foreach (getAttrMap() as $attrinfo)
-		if ($attrinfo['type'] == 'dict')
-			foreach ($attrinfo['application'] as $app)
-				$dict[$app['chapter_no']]['mapped'] = TRUE;
-	echo "<div class=dictionary_table>\n";
-	echo '<div class="chapter_name title">Chapter Name</div><div class="chapter_words title">Words</div><div class="chapter_actions title">&nbsp;</div>';
-	if (getConfigVar ('ADDNEW_AT_TOP') == 'yes')
-		printNewItemTR();
-	foreach ($dict as $chapter_id => $chapter)
-	{
-		$wordcount = $chapter['wordc'];
-		$sticky = $chapter['sticky'] == 'yes';
-		printOpFormIntro ('upd', array ('chapter_no' => $chapter_id));
-		echo '<tr>';
-		echo '<td>';
-		if ($sticky)
-			printImageHREF ('nodestroy', 'system chapter');
-		elseif ($wordcount > 0)
-			printImageHREF ('nodestroy', 'contains ' . $wordcount . ' word(s)');
-		elseif ($chapter['mapped'])
-			printImageHREF ('nodestroy', 'used in attribute map');
-		else
-			echo getOpLink (array('op'=>'del', 'chapter_no'=>$chapter_id), '', 'destroy', 'Remove chapter');
-		echo '</td>';
-		echo "<td><input type=text name=chapter_name value='${chapter['name']}'" . ($sticky ? ' disabled' : '') . "></td>";
-		echo "<td class=tdleft>${wordcount}</td><td>";
-		if ($sticky)
-			echo '&nbsp;';
-		else
-			printImageHREF ('save', 'Save changes', TRUE);
-		echo '</td></tr>';
-		echo '</form>';
-	}
-	if (getConfigVar ('ADDNEW_AT_TOP') != 'yes')
-		printNewItemTR();
-	echo "</div>\n";
-}
- */
 function renderChaptersEditor ()
 {
 	function printNewItemTR ()

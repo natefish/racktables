@@ -268,10 +268,11 @@ function isPCRE ($arg)
 function genericAssertion ($argname, $argtype)
 {
 	global $sic;
-	
-	if (!array_key_exists ($argname, $sic))
-			throw new InvalidRequestArgException ($argname, '(lost keys)');
-	
+
+#	So, I apparently added this line for some reason...don't remember why. Now it just cause problems, so I commented it out for now.	
+#	if (!array_key_exists ($argname, $sic))
+#		throw new InvalidRequestArgException ($argname, '(lost keys: '.serialize($sic).')');
+
 	switch ($argtype)
 	{
 	case 'string':
@@ -405,6 +406,7 @@ function genericAssertion ($argname, $argtype)
 function isCheckSet ($input_name, $mode = 'bool')
 {
 	$value = isset ($_REQUEST[$input_name]) && $_REQUEST[$input_name] == 'on';
+	
 	switch ($mode)
 	{
 		case 'bool' : return $value;
@@ -2794,7 +2796,9 @@ function cookOptgroups ($recordList, $object_type_id = 0, $existing_value = 0)
 	$ret = array();
 	$therest = array();
 	foreach ($recordList as $dict_key => $dict_value)
-		if (preg_match ('/^(.*)%(GPASS|GSKIP)%/', $dict_value, $m))
+		if ($dict_value['display'] == 'no')
+			continue;
+		else if (preg_match ('/^(.*)%(GPASS|GSKIP)%/', $dict_value['value'], $m))
 			$ret[$m[1]][$dict_key] = execGMarker ($dict_value['value']);
 		else
 			$therest[$dict_key] = $dict_value['value'];
@@ -3076,7 +3080,7 @@ function decodeObjectType ($objtype_id, $style = 'r')
 			'a' => readChapter (CHAP_OBJTYPE, 'a'),
 			'o' => readChapter (CHAP_OBJTYPE, 'o')
 		);
-	return $types[$style][$objtype_id];
+	return $types[$style][$objtype_id]['value'];
 }
 
 function isolatedPermission ($p, $t, $cell)
@@ -5233,7 +5237,7 @@ function getObjectTypeChangeOptions ($object_id)
 			)
 				continue 2; // next type ID
 		}
-		$ret[$test_id] = $text;
+		$ret[$test_id] = $text['value'];
 	}
 	return $ret;
 }

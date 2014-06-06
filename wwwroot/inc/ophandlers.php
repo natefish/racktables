@@ -352,7 +352,9 @@ $opspec_list['chapter-edit-upd'] = array
 		# same as above for listing chapter_no
 		array ('url_argname' => 'chapter_no', 'table_colname' => 'chapter_id', 'assertion' => 'uint'),
 		array ('url_argname' => 'dict_key', 'assertion' => 'uint'),
-		array ('fix_argname' => 'dict_sticky', 'fix_argvalue' => 'no'), # protect system rows
+		//disabled to allow hiding values, plus don't really care if sticky vals are edited somehow
+		//the usual input methods are disabled, so it would take some effort to change values
+		//array ('fix_argname' => 'dict_sticky', 'fix_argvalue' => 'no'), # protect system rows
 	),
 );
 $opspec_list['tagtree-edit-createTag'] = array
@@ -3373,7 +3375,6 @@ function buildOpspecColumns ($opspec, $listname)
 				$argspec['table_colname'] :
 				$argspec['url_argname'];
 			$arg_value = $sic[$argspec['url_argname']];
-			//add case for "check/yesno" and to genericAssertion as well
 			if(($argspec['assertion'] == 'uint0' and $arg_value == 0)
 				or ($argspec['assertion'] == 'string0' and $arg_value == ''))
 			{
@@ -3390,7 +3391,8 @@ function buildOpspecColumns ($opspec, $listname)
 			}
 			else if ($argspec['assertion'] == 'check/yesno')
 			{
-				$arg_value = isCheckSet($arg_value,'yesno');
+				//the checkbox reads 'hide', so when it is 'on', display == no
+				$arg_value = (isset ($arg_value) && $arg_value == 'on') ? 'no' : 'yes';
 			}
 			$columns[$table_colname] = $arg_value;
 			break;
