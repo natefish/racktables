@@ -9,6 +9,7 @@
 *  This file contains frontend functions for RackTables.
 *
 */
+
 require_once 'ajax-interface.php';
 require_once 'slb-interface.php';
 
@@ -1286,13 +1287,9 @@ function renderRackInfoPortlet ($rackData)
 	$summary['% used'] = getProgressBar (getRSUforRack ($rackData));
 	$summary['Objects'] = count ($rackData['mountedObjects']);
 	$summary['tags'] = '';
+	if (strlen ($rackData['comment']))
+		$summary['Comment'] = $rackData['comment'];
 	renderEntitySummary ($rackData, 'summary', $summary);
-	if ($rackData['comment'] != '')
-	{
-		startPortlet ('Comment');
-		echo '<div class=commentblock>' . string_insert_hrefs ($rackData['comment']) . '</div>';
-		finishPortlet ();
-	}
 }
 
 // This is a universal editor of rack design/waste.
@@ -3806,10 +3803,7 @@ function renderCellList ($realm = NULL, $title = 'items', $do_amplify = FALSE, $
 	global $nextorder;
 	$order = 'odd';
 	$cellfilter = getCellFilter();
-	if (! isset ($celllist))
-		$celllist = applyCellFilter ($realm, $cellfilter);
-	else
-		$celllist = filterCellList ($celllist, $cellfilter['expression']);
+	$celllist = applyCellFilter ($realm, $cellfilter);
 
 	echo "<table border=0 class=objectview>\n";
 	echo "<tr><td class=pcleft>";
@@ -3865,13 +3859,13 @@ function renderUserListEditor ()
 	$accounts = listCells ('user');
 	startPortlet ('Manage existing (' . count ($accounts) . ')');
 	echo '<table cellspacing=0 cellpadding=5 align=center class=widetable>';
-	echo '<tr><th>Username</th><th>Real name</th><th>New password (use old if blank)</th><th>&nbsp;</th></tr>';
+	echo '<tr><th>Username</th><th>Real name</th><th>Password</th><th>&nbsp;</th></tr>';
 	foreach ($accounts as $account)
 	{
 		printOpFormIntro ('updateUser', array ('user_id' => $account['user_id']));
 		echo "<tr><td><input type=text name=username value='${account['user_name']}' size=16></td>";
 		echo "<td><input type=text name=realname value='${account['user_realname']}' size=24></td>";
-		echo "<td><input type=password name=password size=40></td><td>";
+		echo "<td><input type=password name=password value='${account['user_password_hash']}' size=40></td><td>";
 		printImageHREF ('save', 'Save changes', TRUE);
 		echo '</td></form></tr>';
 	}
@@ -4054,13 +4048,9 @@ function renderLocationPage ($location_id)
 		)
 			$summary['{sticker}' . $record['name']] = formatAttributeValue ($record);
 	$summary['tags'] = '';
+	if (strlen ($locationData['comment']))
+		$summary['Comment'] = $locationData['comment'];
 	renderEntitySummary ($locationData, 'Summary', $summary);
-	if ($locationData['comment'] != '')
-	{
-		startPortlet ('Comment');
-		echo '<div class=commentblock>' . string_insert_hrefs ($locationData['comment']) . '</div>';
-		finishPortlet ();
-	}
 	renderFilesPortlet ('location', $location_id);
 	echo '</td>';
 

@@ -447,7 +447,6 @@ function getImageHREF ($tag, $title = '', $do_input = FALSE, $tabindex = 0)
 			"width=${img['width']} " .
 			"height=${img['height']} " .
 			"border=0 " .
-			"class=icon ".
 			(!strlen ($title) ? '' : "title='${title}'") .
 			">";
 }

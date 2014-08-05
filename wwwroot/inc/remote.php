@@ -493,7 +493,7 @@ function queryTerminal ($object_id, $commands, $tolerate_remote_errors = TRUE)
 
 function callScript ($gwname, $params, $in, &$out, &$errors)
 {
-	global $racktables_gwdir, $local_gwdir, $gateway_log, $script_child_res;
+	global $racktables_gwdir, $local_gwdir, $gateway_log;
 	if (isset ($gateway_log))
 		$gateway_log = '';
 
@@ -543,7 +543,6 @@ function callScript ($gwname, $params, $in, &$out, &$errors)
 	);
 	if (! is_resource ($child))
 		throw new RTGatewayError ("cant execute $binary");
-	$script_child_res = $child;
 
 	$buff_size = 4096;
 	$write_left = array ($pipes[0]);
@@ -600,12 +599,6 @@ function callScript ($gwname, $params, $in, &$out, &$errors)
 			$gateway_log = substr ($gateway_log, -MAX_GW_LOGSIZE);
 
 	}
-	// we need to destroy our global link to the resource here.
-	// PHP's proc_close implementation does nothing itself: it only returns
-	// the value saved by the resource destructor. If the resource was not
-	// destroyed (refcnt > 0), the return value is incorrect.
-	$script_child_res = NULL;
-
 	return proc_close ($child);
 }
 
@@ -643,10 +636,6 @@ function setDevice8021QConfig ($object_id, $pseudocode, $vlan_names)
 // (i.e. some function in deviceconfig.php)
 function shortenIfName ($if_name, $breed = NULL, $object_id = NULL)
 {
-	// this is a port name we invented in snmp.php, do not translate it
-	if (preg_match ('/^AC-in(-[12])?$/', $if_name))
-		return $if_name;
-
 	global $current_query_breed;
 	if (! isset ($breed))
 	{
@@ -655,7 +644,6 @@ function shortenIfName ($if_name, $breed = NULL, $object_id = NULL)
 		elseif (isset ($current_query_breed))
 			$breed = $current_query_breed;
 	}
-
 	switch ($breed)
 	{
 		case 'ios12':

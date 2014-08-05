@@ -73,7 +73,7 @@ function platform_is_ok ()
 {
 	$nerrs = 0;
 	echo "<table border=1 cellpadding=5>\n";
-	$nerrs += platform_generic_test (version_compare (PHP_VERSION, '5.3.0', '>='), 'PHP version >= 5.3.0');
+	$nerrs += platform_generic_test (version_compare (PHP_VERSION, '5.2.10', '>='), 'PHP version >= 5.2.10');
 	$nerrs += platform_generic_test (class_exists ('PDO'), 'PDO extension');
 	$nerrs += platform_generic_test (in_array  ('pdo_mysql', get_loaded_extensions()), 'PDO-MySQL extension');
 	$nerrs += platform_function_test ('preg_match', 'PCRE extension');
@@ -987,16 +987,16 @@ $dictionary = array
 	896 => array ('chapter_id' => 12, 'dict_value' => 'HP ProCurve%GPASS%8108fl'),
 	897 => array ('chapter_id' => 12, 'dict_value' => 'HP ProCurve%GPASS%8116fl'),
 	898 => array ('chapter_id' => 12, 'dict_value' => 'HP ProCurve%GPASS%8212zl'),
-	899 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX3200-24P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	900 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX3200-24T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	901 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX3200-48P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	902 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX3200-48T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	903 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-24F | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	904 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-24P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	905 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-24T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	906 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-48P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	907 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-48T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	908 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX8208 | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	899 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 3200-24P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	900 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 3200-24T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	901 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 3200-48P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	902 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 3200-48T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	903 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 4200-24F | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	904 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 4200-24P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	905 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 4200-24T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	906 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 4200-48P | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	907 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 4200-48T | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
+	908 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX 8208 | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
 	909 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%E120 BSR | http://www.juniper.net/products_and_services/e_series_broadband_service/index.html]]'),
 	910 => array ('chapter_id' => 17, 'dict_value' => '[[Juniper%GPASS%E320 BSR | http://www.juniper.net/products_and_services/e_series_broadband_service/index.html]]'),
 	911 => array ('chapter_id' => 17, 'dict_value' => '[[Juniper%GPASS%ERX-310 | http://www.juniper.net/products_and_services/e_series_broadband_service/index.html]]'),
@@ -2230,11 +2230,6 @@ $dictionary = array
 	2142 => array ('chapter_id' => 14, 'dict_value' => 'Cisco IOS 15.2'),
 	2143 => array ('chapter_id' => 13, 'dict_value' => 'Red Hat Enterprise%GSKIP%RHEL V7'),
 	2144 => array ('chapter_id' => 38, 'dict_value' => 'Cisco%GPASS%Wireless Controller'),
-	2145 => array ('chapter_id' => 12, 'dict_value' => 'Pica8%GPASS%P-3297'),
-	2146 => array ('chapter_id' => 12, 'dict_value' => 'Pica8%GPASS%P-3930'),
-	2147 => array ('chapter_id' => 11, 'dict_value' => 'Dell PowerEdge%GPASS%R420'),
-	2148 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-24PX | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
-	2149 => array ('chapter_id' => 12, 'dict_value' => '[[Juniper%GPASS%EX4200-48PX | http://www.juniper.net/products_and_services/ex_series/index.html]]'),
 
 # Any new "default" dictionary records must go above this line (i.e., with
 # dict_key code less, than 50000). This is necessary to keep AUTO_INCREMENT

@@ -558,7 +558,7 @@ function buildLVSConfig ($object_id)
 
 function addRStoRSPool ($pool_id, $rsip_bin, $rsport = 0, $inservice = 'no', $rsconfig = '', $comment = '')
 {
-	$ret = usePreparedInsertBlade
+	return usePreparedInsertBlade
 	(
 		'IPv4RS',
 		array
@@ -571,8 +571,6 @@ function addRStoRSPool ($pool_id, $rsip_bin, $rsport = 0, $inservice = 'no', $rs
 			'comment' => !strlen ($comment) ? NULL : $comment,
 		)
 	);
-	lastCreated ('iprs', lastInsertID());
-	return $ret;
 }
 
 function addLBtoRSPool ($pool_id = 0, $object_id = 0, $vs_id = 0, $vsconfig = '', $rsconfig = '', $prio = '')
@@ -641,7 +639,8 @@ function commitUpdateVS ($vsid, $vip_bin, $vport = 0, $proto = '', $name = '', $
 
 function commitCreateRSPool ($name = '', $vsconfig = '', $rsconfig = '', $tagidlist = array())
 {
-	usePreparedInsertBlade
+	$new_pool_id = FALSE;
+	if (usePreparedInsertBlade
 	(
 		'IPv4RSPool',
 		array
@@ -650,9 +649,8 @@ function commitCreateRSPool ($name = '', $vsconfig = '', $rsconfig = '', $tagidl
 			'vsconfig' => (!strlen ($vsconfig) ? NULL : $vsconfig),
 			'rsconfig' => (!strlen ($rsconfig) ? NULL : $rsconfig)
 		)
-	);
-	$new_pool_id = lastInsertID();
-	lastCreated ('ipv4rspool', $new_pool_id);
+	))
+		$new_pool_id = lastInsertID();
 	produceTagsForNewRecord ('ipv4rspool', $tagidlist, $new_pool_id);
 	return $new_pool_id;
 }

@@ -268,11 +268,6 @@ function isPCRE ($arg)
 function genericAssertion ($argname, $argtype)
 {
 	global $sic;
-
-#	So, I apparently added this line for some reason...don't remember why. Now it just cause problems, so I commented it out for now.	
-#	if (!array_key_exists ($argname, $sic))
-#		throw new InvalidRequestArgException ($argname, '(lost keys: '.serialize($sic).')');
-
 	switch ($argtype)
 	{
 	case 'string':
@@ -406,7 +401,6 @@ function genericAssertion ($argname, $argtype)
 function isCheckSet ($input_name, $mode = 'bool')
 {
 	$value = isset ($_REQUEST[$input_name]) && $_REQUEST[$input_name] == 'on';
-	
 	switch ($mode)
 	{
 		case 'bool' : return $value;
@@ -6148,26 +6142,6 @@ function splitNetworkByMask ($netinfo, $dst_mask)
         $self (constructIPRange ($netinfo['ip_bin'], $netinfo['mask'] + 1), $dst_mask),
         $self (constructIPRange (ip_last ($netinfo), $netinfo['mask'] + 1), $dst_mask)
     );
-}
-
-// this function is used both to remember and to retrieve the last created entity's ID
-// it stores given id in the static var, and returns the stored value is called without args
-// used in plugins to make additional work on created entity in the chained ophandler
-// returns an array of realm-ID pairs
-function lastCreated ($realm = NULL, $id = NULL)
-{
-	static $last_ids = array();
-	if (isset ($realm) && isset ($id))
-		$last_ids[] = array('realm' => $realm, 'id' => $id);
-	return $last_ids;
-}
-
-// returns last id of a given type from lastCreated() result array
-function getLastCreatedId ($realm)
-{
-	foreach (array_reverse (lastCreated()) as $item)
-		if ($item['realm'] == $realm)
-			return $item['id'];
 }
 
 ?>

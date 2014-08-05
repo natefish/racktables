@@ -944,10 +944,11 @@ function updateUser ()
 	genericAssertion ('user_id', 'uint');
 	$username = assertStringArg ('username');
 	assertStringArg ('realname', TRUE);
-	$new_password = assertStringArg ('password', TRUE);
+	$new_password = assertStringArg ('password');
 	$userinfo = spotEntity ('user', $_REQUEST['user_id']);
-	// Set new password only if provided.
-	$new_password = mb_strlen ($new_password) ? sha1 ($new_password) : $userinfo['user_password_hash'];
+	// Update user password only if provided password is not the same as current password hash.
+	if ($new_password != $userinfo['user_password_hash'])
+		$new_password = sha1 ($new_password);
 	commitUpdateUserAccount ($_REQUEST['user_id'], $username, $_REQUEST['realname'], $new_password);
 	// if user account renaming is being performed, change key value in UserConfig table
 	if ($userinfo['user_name'] !== $username)
@@ -1418,7 +1419,9 @@ function resetUIConfig()
 	setConfigVar ('SYNCDOMAIN_MAX_PROCESSES', '0');
 	setConfigVar ('PORT_EXCLUSION_LISTSRC', '{$typeid_3} or {$typeid_10} or {$typeid_11} or {$typeid_1505} or {$typeid_1506}');
 	setConfigVar ('FILTER_RACKLIST_BY_TAGS', 'yes');
-	setConfigVar ('MGMT_PROTOS', 'ssh: {$typeid_4}; telnet: {$typeid_8}');
+	setConfigVar ('SSH_OBJS_LISTSRC', 'false');
+	setConfigVar ('RDP_OBJS_LISTSRC', 'false');
+	setConfigVar ('TELNET_OBJS_LISTSRC', 'false');
 	setConfigVar ('SYNC_802Q_LISTSRC', '');
 	setConfigVar ('QUICK_LINK_PAGES', 'depot,ipv4space,rackspace');
 	setConfigVar ('CACTI_LISTSRC', 'false');
@@ -1532,7 +1535,6 @@ function addVService ()
 		)
 	);
 	$vs_id = lastInsertID();
-	lastCreated ('ipv4vs', $vs_id);
 	if (isset ($_REQUEST['taglist']))
 		produceTagsForNewRecord ('ipv4vs', $_REQUEST['taglist'], $vs_id);
 	$vsinfo = spotEntity ('ipv4vs', $vs_id);
@@ -1544,7 +1546,6 @@ function addVSG ()
 	$name = assertStringArg ('name');
 	usePreparedInsertBlade ('VS', array ('name' => $name));
 	$vs_id = lastInsertID();
-	lastCreated ('ipvs', $vs_id);
 	if (isset ($_REQUEST['taglist']))
 		produceTagsForNewRecord ('ipvs', $_REQUEST['taglist'], $vs_id);
 	$vsinfo = spotEntity ('ipvs', $vs_id);
@@ -2211,7 +2212,8 @@ function updateRow ()
 	assertStringArg ('name');
 	
 	//'no' seems to be required by IIS as NULL causes errors
-	commitUpdateObject ($_REQUEST['row_id'], $_REQUEST['name'], NULL, 'no', NULL, NULL);
+	commitUpdateObject ($_REQUEST['row_id'], $_REQUEST['name'], NULL, NULL, NULL, NULL);
+	//commitUpdateObject ($_REQUEST['row_id'], $_REQUEST['name'], NULL, 'no', NULL, NULL);
 
 	global $pageno;
 	if ($pageno == 'row')
@@ -2681,14 +2683,12 @@ function createVLANDomain ()
 			'description' => $sic['vdom_descr'],
 		)
 	);
-	$domain_id = lastInsertID();
-	lastCreated ('vdom', $domain_id);
 	usePreparedInsertBlade
 	(
 		'VLANDescription',
 		array
 		(
-			'domain_id' => $domain_id,
+			'domain_id' => lastInsertID(),
 			'vlan_id' => VLAN_DFL_ID,
 			'vlan_type' => 'compulsory',
 			'vlan_descr' => 'default',
@@ -3415,30 +3415,7 @@ function tableHandler()
 	switch ($opspec['action'])
 	{
 	case 'INSERT':
-		switch ($opspec['table'])
-		{
-			case 'Attribute':
-				$realm = 'attr';
-				break;
-			case 'Chapter':
-				$realm = 'chapter';
-				break;
-			case 'Dictionary':
-				$realm = 'dict';
-				break;
-			case 'TagTree':
-				$realm = 'tag';
-				break;
-			case 'VLANSwitchTemplate':
-				$realm = 'vst';
-				break;
-			default:
-				$realm = NULL;
-		}
 		usePreparedInsertBlade ($opspec['table'], buildOpspecColumns ($opspec, 'arglist'));
-		if (isset ($realm))
-			lastCreated ($realm, lastInsertID());
-
 		$retcode = 48;
 		break;
 	case 'DELETE':
