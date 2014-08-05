@@ -42,7 +42,7 @@ $indexlayout = array
 	array ('config', 'objectlog', 'virtual'),
 );
 
-$page['index']['title'] = 'Main page';
+$page['index']['title'] = 'Home';
 $page['index']['handler'] = 'renderIndex';
 
 $page['rackspace']['title'] = 'Rackspace';
