@@ -510,6 +510,15 @@ $iftable_processors['catalyst-stack-1-to-4-SFP'] = array
 	'try_next_proc' => FALSE,
 );
 
+$iftable_processors['catalyst-stack-uplinks-10000SFP+'] = array
+(
+	'pattern' => '@^TenGigabitEthernet(\d+)/(\d+)/([1-4])$@',
+	'replacement' => 'te\\1/\\2/\\3',
+	'dict_key' => '9-1084',
+	'label' => 'unit \\1 port \\3',
+	'try_next_proc' => FALSE,
+);
+
 $iftable_processors['catalyst-2948-49-to-50-SFP'] = array
 (
 	'pattern' => '@^port 2/(49|50)$@',
@@ -2290,6 +2299,20 @@ $known_switches = array // key is system OID w/o "enterprises" prefix
 		'text' => 'WS-C2960S-F48LPS-L: 48 RJ-45/10-100TX + 4 SFP/1000',
 		'processors' => array ('catalyst-stack-1-to-4-SFP', 'catalyst-chassis-mgmt', 'catalyst-stack-any-100TX'),
 	),
+	'9.1.1693' => array
+	(
+		'dict_key' => 2112,
+		'text' => 'WS-C2960X-24PD-L: 24 RJ-45/10-100-1000T(X) + 2 SFP+/10000',
+		'processors' => array ('catalyst-stack-uplinks-10000SFP+', 'catalyst-chassis-mgmt', 'catalyst-stack-any-1000T'),
+
+	),
+	'9.1.1697' => array
+	(
+		'dict_key' => 2117,
+		'text' => 'WS-C2960X-24PS-L: 24 RJ-45/10-100-1000T(X) + 4 SFP+/10000',
+		'processors' => array ('catalyst-stack-uplinks-10000SFP+', 'catalyst-chassis-mgmt', 'catalyst-stack-any-1000T'),
+
+	),
 	'9.5.18' => array
 	(
 		'dict_key' => 2094,
@@ -3109,7 +3132,7 @@ $swtype_pcre = array
 	'/Huawei Versatile Routing Platform Software.+VRP.+Software,\s*Version 5\.70 /is' => 1369,
 	'/Huawei Versatile Routing Platform Software.+VRP.+Software,\s*Version 5\.110 /is' => 2080,
 	'/Huawei Versatile Routing Platform Software.+VRP.+Software,\s*Version 5\.120 /is' => 2081,
-	'/Huawei Versatile Routing Platform Software.+VRP.+Software,\s*Version 8\.50 /is' => 2027,
+	'/Huawei Versatile Routing Platform Software.+VRP.+Software,\s*Version 8\./is' => 2027,
 	// FIXME: get sysDescr for IronWare 5 and add a pattern
 	'/^Brocade Communications Systems.+, IronWare Version 07\./' => 1364,
 	'/^Juniper Networks,.+JUNOS 9\./' => 1366,

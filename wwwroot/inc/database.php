@@ -847,7 +847,7 @@ SELECT
 	Port.iif_id,
 	Port.type AS oif_id,
 	(SELECT PortInnerInterface.iif_name FROM PortInnerInterface WHERE PortInnerInterface.id = Port.iif_id) AS iif_name,
-	(SELECT Dictionary.dict_value FROM Dictionary WHERE Dictionary.dict_key = Port.type) AS oif_name,
+	(SELECT PortOuterInterface.oif_name FROM PortOuterInterface WHERE PortOuterInterface.id = Port.type) AS oif_name,
 	IF(la.porta, la.cable, lb.cable) AS cableid,
 	IF(la.porta, pa.id, pb.id) AS remote_id,
 	IF(la.porta, pa.name, pb.name) AS remote_name,
@@ -944,10 +944,27 @@ function commitAddObject ($new_name, $new_label, $new_type_id, $new_asset_no, $t
 		)
 	);
 	$object_id = lastInsertID();
+	switch ($new_type_id)
+	{
+		case 1560:
+			$realm = 'rack';
+			break;
+		case 1561:
+			$realm = 'row';
+			break;
+		case 1562:
+			$realm = 'localtion';
+			break;
+		default:
+			$realm = 'object';
+	}
+	lastCreated ($realm, $object_id);
+
 	// Do AutoPorts magic
-	executeAutoPorts ($object_id, $new_type_id);
+	if ($realm == 'object')
+		executeAutoPorts ($object_id, $new_type_id);
 	// Now tags...
-	produceTagsForNewRecord ('object', $taglist, $object_id);
+	produceTagsForNewRecord ($realm, $taglist, $object_id);
 	recordObjectHistory ($object_id);
 	return $object_id;
 }
@@ -1082,7 +1099,7 @@ function getObjectContentsList ($object_id, $children = array ())
 		if (in_array ($row['child_entity_id'], $children))
 			throw new RackTablesError ("Circular reference for object ${object_id}", RackTablesError::INTERNAL);
 		$children[] = $row['child_entity_id'];
-		$children = array_merge ($children, $self ($row['child_entity_id'], $children));
+		$children = array_unique (array_merge ($children, $self ($row['child_entity_id'], $children)));
 	}
 	return $children;
 }
@@ -1099,7 +1116,7 @@ function getLocationChildrenList ($location_id, $children = array ())
 		if (in_array ($row['id'], $children))
 			throw new RackTablesError ("Circular reference for location ${location_id}", RackTablesError::INTERNAL);
 		$children[] = $row['id'];
-		$children = array_merge ($children, $self ($row['id'], $children));
+		$children = array_unique (array_merge ($children, $self ($row['id'], $children)));
 	}
 	return $children;
 }
@@ -1116,7 +1133,7 @@ function getTagChildrenList ($tag_id, $children = array ())
 		if (in_array ($row['id'], $children))
 			throw new RackTablesError ("Circular reference for tag ${tag_id}", RackTablesError::INTERNAL);
 		$children[] = $row['id'];
-		$children = array_merge ($children, $self ($row['id'], $children));
+		$children = array_unique (array_merge ($children, $self ($row['id'], $children)));
 	}
 	return $children;
 }
@@ -1704,6 +1721,7 @@ function commitAddPort ($object_id = 0, $port_name, $port_type_id, $port_label, 
 				'l2address' => nullEmptyStr ($db_l2address),
 			)
 		);
+		lastCreated ('port', lastInsertID());
 		if ($do_locks)
 			$dbxlink->exec ('UNLOCK TABLES');
 	}
@@ -3299,7 +3317,9 @@ function commitCreateUserAccount ($username, $realname, $password)
 			'user_password_hash' => $password,
 		)
 	);
-	return lastInsertID();
+	$user_id = lastInsertID();
+	lastCreated ('user', $user_id);
+	return $user_id;
 }
 
 function commitUpdateUserAccount ($id, $new_username, $new_realname, $new_password)
@@ -3325,9 +3345,9 @@ function getPortOIFCompat ($ignore_cache = FALSE)
 		return $cache;
 
 	$query =
-		"select type1, type2, d1.dict_value as type1name, d2.dict_value as type2name from " .
-		"PortCompat as pc inner join Dictionary as d1 on pc.type1 = d1.dict_key " .
-		"inner join Dictionary as d2 on pc.type2 = d2.dict_key " .
+		"SELECT type1, type2, POI1.oif_name AS type1name, POI2.oif_name AS type2name FROM " .
+		"PortCompat AS pc INNER JOIN PortOuterInterface AS POI1 ON pc.type1 = POI1.id " .
+		"INNER JOIN PortOuterInterface AS POI2 ON pc.type2 = POI2.id " .
 		'ORDER BY type1name, type2name';
 	$result = usePreparedSelectBlade ($query);
 	$cache = $result->fetchAll (PDO::FETCH_ASSOC);
@@ -3543,12 +3563,6 @@ function getChapterRefc ($chapter_id, $keylist)
 		$query = 'select dict_key as uint_value, (select count(*) from AttributeMap where objtype_id = dict_key) + ' .
 			"(select count(*) from Object where objtype_id = dict_key) as refcnt from Dictionary where chapter_id = ?";
 		break;
-	case CHAP_PORTTYPE:
-		// PortOuterInterface chapter is referenced by PortCompat, PortInterfaceCompat and Port tables
-		$query = 'select dict_key as uint_value, (select count(*) from PortCompat where type1 = dict_key or type2 = dict_key) + ' .
-			'(select count(*) from Port where type = dict_key) + (SELECT COUNT(*) FROM PortInterfaceCompat WHERE oif_id = dict_key) as refcnt ' .
-			"from Dictionary where chapter_id = ?";
-		break;
 	default:
 		// Find the list of all assigned values of dictionary-addressed attributes, each with
 		// chapter/word keyed reference counters.
@@ -3564,6 +3578,23 @@ function getChapterRefc ($chapter_id, $keylist)
 	while ($row = $result->fetch (PDO::FETCH_ASSOC))
 		$ret[$row['uint_value']] = $row['refcnt'];
 	return $ret;
+}
+
+// Return references counter for each of the given OIF IDs. This includes not
+// only PortCompat and PortInterfaceCompat but also Port even though the latter
+// is not based on PortOuterInterface directly.
+function getPortOIFRefc()
+{
+	$result = usePreparedSelectBlade
+	(
+		'SELECT POI.id, (' .
+		'(SELECT COUNT(*) FROM PortCompat WHERE type1 = id) + ' .
+		'(SELECT COUNT(*) FROM PortCompat WHERE type2 = id) + ' .
+		'(SELECT COUNT(*) FROM Port WHERE type = POI.id) + ' .
+		'(SELECT COUNT(*) FROM PortInterfaceCompat WHERE oif_id = POI.id)' .
+		') AS refcnt FROM PortOuterInterface AS POI'
+	);
+	return reduceSubarraysToColumn (reindexByID ($result->fetchAll (PDO::FETCH_ASSOC)), 'refcnt');
 }
 
 // Return a list of all stickers with sticker map applied. Each sticker records will
@@ -3654,7 +3685,6 @@ function fetchAttrsForObjects ($object_set = array())
 		"left join Chapter as C on AM.chapter_id = C.id";
 	if (count ($object_set))
 		$query .= ' WHERE O.id IN (' . implode (', ', $object_set) . ')';
-	$query .= " ORDER BY A.name, A.type";
 
 	$result = usePreparedSelectBlade ($query);
 	while ($row = $result->fetch (PDO::FETCH_ASSOC))
@@ -3713,6 +3743,33 @@ function getAttrValues ($object_id)
 		$object_attribute_cache[$object_id] = $attrs;
 	}
 	return $attrs;
+}
+
+// returns the same data as getAttrValues, but sorts the result array
+// by the attr_name using SQL server's collation
+function getAttrValuesSorted ($object_id)
+{
+	static $attr_order = NULL;
+	if (! isset ($attr_order))
+	{
+		$attr_order = array();
+		$result = usePreparedSelectBlade ("SELECT id FROM Attribute ORDER by name");
+		$i = 0;
+		foreach ($result->fetchAll (PDO::FETCH_COLUMN, 0) as $attr_id)
+			$attr_order[$attr_id] = $i++;
+		unset ($result);
+	}
+
+	$ret = getAttrValues ($object_id);
+	uksort ($ret,
+		function ($a, $b) use ($attr_order) {
+			return numCompare (
+				array_fetch ($attr_order, $a, 0),
+				array_fetch ($attr_order, $b, 0)
+			);
+		}
+	);
+	return $ret;
 }
 
 function commitUpdateAttrValue ($object_id, $attr_id, $value = '')
@@ -4247,6 +4304,7 @@ function createIPv4Prefix ($range = '', $name = '', $is_connected = FALSE, $tagl
 		)
 	);
 	$network_id = lastInsertID();
+	lastCreated ('ipv4net', $network_id);
 
 	if ($is_connected and $mask < 31)
 	{
@@ -4286,6 +4344,8 @@ function createIPv6Prefix ($range = '', $name = '', $is_connected = FALSE, $tagl
 		)
 	);
 	$network_id = lastInsertID();
+	lastCreated ('ipv6net', lastInsertID());
+
 	# RFC3513 2.6.1 - Subnet-Router anycast
 	if ($is_connected)
 		updateV6Address ($net['ip_bin'], 'Subnet-Router anycast', 'yes');
@@ -4787,9 +4847,9 @@ function getPortInterfaceCompat()
 {
 	$result = usePreparedSelectBlade
 	(
-		'SELECT iif_id, iif_name, oif_id, dict_value AS oif_name ' .
-		'FROM PortInterfaceCompat INNER JOIN PortInnerInterface ON id = iif_id ' .
-		'INNER JOIN Dictionary ON dict_key = oif_id ' .
+		'SELECT iif_id, iif_name, oif_id, oif_name ' .
+		'FROM PortInterfaceCompat INNER JOIN PortInnerInterface AS PII ON PII.id = iif_id ' .
+		'INNER JOIN PortOuterInterface AS POI ON POI.id = oif_id ' .
 		'ORDER BY iif_name, oif_name'
 	);
 	return $result->fetchAll (PDO::FETCH_ASSOC);
@@ -4806,8 +4866,8 @@ function getExistingPortTypeOptions ($port_id)
 	{
 		$remote_portinfo = getPortInfo ($portinfo['remote_id']);
 		$result = usePreparedSelectBlade ("
-SELECT DISTINCT oif_id, dict_value AS oif_name
-FROM PortInterfaceCompat INNER JOIN Dictionary ON oif_id = dict_key
+SELECT DISTINCT oif_id, oif_name
+FROM PortInterfaceCompat INNER JOIN PortOuterInterface ON oif_id = id
 LEFT JOIN PortCompat pc1 ON oif_id = pc1.type1 AND pc1.type2 = ?
 LEFT JOIN PortCompat pc2 ON oif_id = pc1.type2 AND pc2.type1 = ?
 WHERE iif_id = (SELECT iif_id FROM Port WHERE id = ?)
@@ -4819,8 +4879,8 @@ ORDER BY oif_name
 	else
 	{
 		$result = usePreparedSelectBlade ("
-SELECT oif_id, dict_value AS oif_name
-FROM PortInterfaceCompat INNER JOIN Dictionary ON oif_id = dict_key
+SELECT oif_id, oif_name
+FROM PortInterfaceCompat INNER JOIN PortOuterInterface ON oif_id = id
 WHERE iif_id = (SELECT iif_id FROM Port WHERE id = ?)
 ORDER BY oif_name
 ", array ($port_id)
@@ -4849,6 +4909,12 @@ function getPortIIFOptions()
 	return reduceSubarraysToColumn (reindexByID ($result->fetchAll (PDO::FETCH_ASSOC)), 'iif_name');
 }
 
+function getPortOIFOptions()
+{
+	$result = usePreparedSelectBlade ('SELECT id, oif_name FROM PortOuterInterface ORDER BY oif_name');
+	return reduceSubarraysToColumn (reindexByID ($result->fetchAll (PDO::FETCH_ASSOC)), 'oif_name');
+}
+
 function commitSupplementPIC ($iif_id, $oif_id)
 {
 	usePreparedInsertBlade
@@ -4858,16 +4924,16 @@ function commitSupplementPIC ($iif_id, $oif_id)
 	);
 }
 
-function getPortIIFStats ($args)
+function getPortIIFStats ($iif_id)
 {
 	$result = usePreparedSelectBlade
 	(
-		'SELECT dict_value AS title, COUNT(id) AS max, ' .
+		'SELECT oif_name AS title, COUNT(Port.id) AS max, ' .
 		'COUNT(reservation_comment) + ' .
-		'SUM((SELECT COUNT(*) FROM Link WHERE id IN (porta, portb))) AS current ' .
-		'FROM Port INNER JOIN Dictionary ON type = dict_key ' .
+		'SUM((SELECT COUNT(*) FROM Link WHERE Port.id IN (porta, portb))) AS current ' .
+		'FROM Port INNER JOIN PortOuterInterface AS POI ON type = POI.id ' .
 		'WHERE iif_id = ? GROUP BY type',
-		array_slice ($args, 0, 1) // array with only the first argument
+		array ($iif_id)
 	);
 	return $result->fetchAll (PDO::FETCH_ASSOC);
 }
@@ -5495,6 +5561,137 @@ function getEntitiesCount ($realm)
 	$table = $SQLSchema[$realm]['table'];
 	$result = usePreparedSelectBlade ("SELECT COUNT(*) FROM `$table`");
 	return $result->fetch (PDO::FETCH_COLUMN, 0);
+}
+
+function getPatchCableConnectorList()
+{
+	$result = usePreparedSelectBlade ('SELECT id, origin, connector FROM PatchCableConnector ORDER BY connector');
+	return $result->fetchAll (PDO::FETCH_ASSOC);
+}
+
+function getPatchCableConnectorOptions()
+{
+	$ret = array();
+	foreach (getPatchCableConnectorList() as $item)
+		$ret[$item['id']] = $item['connector'] . ($item['origin'] == 'custom' ? ' (custom)' : '');
+	return $ret;
+}
+
+function getPatchCableTypeList()
+{
+	$result = usePreparedSelectBlade ('SELECT id, origin, pctype FROM PatchCableType ORDER BY pctype');
+	return $result->fetchAll (PDO::FETCH_ASSOC);
+}
+
+function getPatchCableTypeOptions()
+{
+	$ret = array();
+	foreach (getPatchCableTypeList() as $item)
+		$ret[$item['id']] = $item['pctype'] . ($item['origin'] == 'custom' ? ' (custom)' : '');
+	return $ret;
+}
+
+function getPatchCableHeapSummary()
+{
+	$result = usePreparedSelectBlade
+	(
+		'SELECT PCH.id, end1_conn_id, PCC1.connector AS end1_connector, pctype_id, pctype, ' .
+		'end2_conn_id, PCC2.connector AS end2_connector, amount, length, description, ' .
+		'COUNT(PCHL.id) AS logc FROM PatchCableHeap AS PCH ' .
+		'INNER JOIN PatchCableType AS PCT ON PCH.pctype_id = PCT.id ' .
+		'INNER JOIN PatchCableConnector AS PCC1 ON end1_conn_id = PCC1.id ' .
+		'INNER JOIN PatchCableConnector AS PCC2 ON end2_conn_id = PCC2.id ' .
+		'LEFT JOIN PatchCableHeapLog AS PCHL ON PCH.id = PCHL.heap_id ' .
+		'GROUP BY PCH.id ' .
+		'ORDER BY pctype, end1_connector, end2_connector, description, id '
+	);
+	return reindexByID ($result->fetchAll (PDO::FETCH_ASSOC));
+}
+
+function getPatchCableHeapOptionsForOIF ($oif_id)
+{
+	$result = usePreparedSelectBlade ('SELECT pctype_id FROM PatchCableOIFCompat WHERE oif_id = ?', array ($oif_id));
+	$pctypes = reduceSubarraysToColumn ($result->fetchAll (PDO::FETCH_ASSOC), 'pctype_id');
+	unset ($result);
+	$ret = array();
+	foreach (getPatchCableHeapSummary() as $item)
+		if ($item['amount'] > 0 && in_array ($item['pctype_id'], $pctypes))
+			$ret[$item['id']] = formatPatchCableHeapAsPlainText ($item);
+	return $ret;
+}
+
+function getPatchCableConnectorCompat()
+{
+	$result = usePreparedSelectBlade
+	(
+		'SELECT pctype_id, pctype, connector_id, connector FROM PatchCableConnectorCompat ' .
+		'INNER JOIN PatchCableType AS PCT ON pctype_id = PCT.id ' .
+		'INNER JOIN PatchCableConnector AS PCC ON connector_id = PCC.id ' .
+		'ORDER BY pctype, connector'
+	);
+	return $result->fetchAll (PDO::FETCH_ASSOC);
+}
+
+function getPatchCableOIFCompat()
+{
+	$result = usePreparedSelectBlade
+	(
+		'SELECT pctype_id, pctype, oif_id, oif_name FROM PatchCableOIFCompat ' .
+		'INNER JOIN PatchCableType AS PCT ON pctype_id = PCT.id ' .
+		'INNER JOIN PortOuterInterface AS POI ON oif_id = POI.id ' .
+		'ORDER BY pctype, oif_name'
+	);
+	return $result->fetchAll (PDO::FETCH_ASSOC);
+}
+
+function commitModifyPatchCableAmount ($heap_id, $by_amount)
+{
+	global $dbxlink;
+	$dbxlink->beginTransaction();
+	usePreparedExecuteBlade
+	(
+		'UPDATE PatchCableHeap SET amount = amount + ? WHERE id = ? AND amount + ? >= 0',
+		array ($by_amount, $heap_id, $by_amount)
+	);
+	addPatchCableHeapLogEntry ($heap_id, "amount adjusted by ${by_amount}");
+	return $dbxlink->commit();
+}
+
+function commitSetPatchCableAmount ($heap_id, $new_amount)
+{
+	global $dbxlink;
+	$dbxlink->beginTransaction();
+	usePreparedUpdateBlade
+	(
+		'PatchCableHeap',
+		array ('amount' => $new_amount),
+		array ('id' => $heap_id)
+	);
+	addPatchCableHeapLogEntry ($heap_id, "amount set to ${new_amount}");
+	return $dbxlink->commit();
+}
+
+function getPatchCableHeapLogEntries ($heap_id)
+{
+	$result = usePreparedSelectBlade
+	(
+		'SELECT date, user, message FROM PatchCableHeapLog WHERE heap_id = ? ORDER BY date DESC',
+		array ($heap_id)
+	);
+	return $result->fetchAll (PDO::FETCH_ASSOC);
+}
+
+function addPatchCableHeapLogEntry ($heap_id, $message)
+{
+	global $disable_logging;
+	if (isset ($disable_logging) && $disable_logging)
+		return;
+	global $remote_username;
+	usePreparedExecuteBlade
+	(
+		"INSERT INTO PatchCableHeapLog (heap_id, date, user, message) VALUES (?, NOW(), ?, ?)",
+		array ($heap_id, $remote_username, $message)
+	);
 }
 
 ?>

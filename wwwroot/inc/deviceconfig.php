@@ -753,7 +753,7 @@ function vrp53PickInterfaceSubcommand (&$work, $line)
 			$work['portdata'][$port_name] = array
 			(
 				'allowed' => $work['current']['allowed'],
-				'native' => $work['current']['native'],
+				'native' => in_array ($work['current']['native'], $work['current']['allowed']) ? $work['current']['native'] : 0,
 				'mode' => 'trunk',
 			);
 			break;
@@ -771,8 +771,6 @@ function vrp53PickInterfaceSubcommand (&$work, $line)
 		$work['current']['native'] = $matches[1];
 		if (!array_key_exists ('allowed', $work['current']))
 			$work['current']['allowed'] = array();
-		if (!in_array ($matches[1], $work['current']['allowed']))
-			$work['current']['allowed'][] = $matches[1];
 		break;
 	case (preg_match ('@^ port link-type (.+)$@', $line, $matches)):
 		$work['current']['link-type'] = $matches[1];
@@ -844,8 +842,6 @@ function vrp55Read8021QConfig ($input)
 		// we get a problem).
 		case preg_match ('/^ port (default|trunk pvid) vlan ([[:digit:]]+)$/', $line, $matches):
 			$ret['current']['native'] = $matches[2];
-			if (!in_array ($ret['current']['native'], $ret['current']['allowed']))
-				$ret['current']['allowed'][] = $ret['current']['native'];
 			break;
 		case preg_match ('/^ port trunk allow-pass vlan (.+)$/', $line, $matches):
 			foreach (vrp53ParseVLANString ($matches[1]) as $vlan_id)
@@ -1276,6 +1272,9 @@ show vlan brief
 		case 'getmaclist':
 			$ret .= "show mac address-table dynamic\n";
 			break;
+		case 'getportmaclist':
+			$ret .= "show mac address-table dynamic interface {$cmd['arg1']}\n";
+			break;
 		case 'getallconf':
 			$ret .= "show running-config\n";
 			break;
@@ -1406,6 +1405,9 @@ function vrp53TranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 		case 'getmaclist':
 			$ret .= "display mac-address dynamic\n";
 			break;
+		case 'getportmaclist':
+			$ret .= "display mac-address dynamic {$cmd['arg1']}\n";
+			break;
 		case 'getallconf':
 			$ret .= "display current-configuration\n";
 			break;
@@ -1498,6 +1500,9 @@ function vrp55TranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 			break;
 		case 'getmaclist':
 			$ret .= "display mac-address dynamic\n";
+			break;
+		case 'getportmaclist':
+			$ret .= "display mac-address dynamic {$cmd['arg1']}\n";
 			break;
 		case 'getallconf':
 			$ret .= "display current-configuration\n";
@@ -1593,6 +1598,9 @@ function vrp85TranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 			break;
 		case 'getmaclist':
 			$ret .= "display mac-address dynamic\n";
+			break;
+		case 'getportmaclist':
+			$ret .= "display mac-address dynamic interface {$cmd['arg1']}\n";
 			break;
 		case 'getallconf':
 			$ret .= "display current-configuration\n";
@@ -1757,7 +1765,9 @@ show configuration interfaces
 			break;
 		case 'getlldpstatus':
 			$ret .= "show lldp neighbors\n";
-			$ret .= "# object_id=$dummy_object_id";
+			break;
+		case 'getportstatus':
+			$ret .= "show interfaces terse\n";
 			break;
 		default:
 			throw new InvalidArgException ('opcode', $cmd['opcode']);
@@ -1791,6 +1801,9 @@ function ftos8TranslatePushQueue ($dummy_object_id, $queue, $vlan_names)
 			break;
 		case 'getmaclist':
 			$ret .= "show mac-address-table dynamic\n";
+			break;
+		case 'getportmaclist':
+			$ret .= "show mac-address-table dynamic interface {$cmd['arg1']}\n";
 			break;
 		case 'get8021q':
 			$ret .= "show running-config interface\n";
@@ -1942,6 +1955,9 @@ function eos4TranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 		case 'getmaclist':
 			$ret .= "show mac-address-table dynamic\n";
 			break;
+		case 'getportmaclist':
+			$ret .= "show mac-address-table dynamic interface {$cmd['arg1']}\n";
+			break;
 		case 'cite':
 			$ret .= $cmd['arg1'];
 			break;
@@ -2040,6 +2056,9 @@ function ros11TranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 		case 'getmaclist':
 			$ret .= "show mac address-table dynamic\n";
 			break;
+		case 'getportmaclist':
+			$ret .= "show mac address-table dynamic interface {$cmd['arg1']}\n";
+			break;
 		case 'cite':
 			$ret .= $cmd['arg1'];
 			break;
@@ -2065,6 +2084,9 @@ function dlinkTranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 		case 'getmaclist':
 			$ret .= "show fdb\n";
 			break;
+		case 'getportmaclist':
+			$ret .= "show fdb port {$cmd['arg1']}\n";
+			break;
 		case 'get8021q':
 			$ret .= "show vlan\n";
 			break;
@@ -2088,6 +2110,9 @@ function linuxTranslatePushQueue ($dummy_object_id, $queue, $dummy_vlan_names)
 			break;
 		case 'getmaclist':
 			$ret .= "sudo /usr/sbin/arp -an\n";
+			break;
+		case 'getportmaclist':
+			$ret .= "sudo /usr/sbin/arp -ani {$cmd['arg1']}\n";
 			break;
 		case 'get8021q':
 			$ret .= "sudo /sbin/ip -o a\n";
@@ -3008,6 +3033,39 @@ function ros11ReadInterfaceStatus ($text)
 	return $ret;
 }
 
+function jun10ReadInterfaceStatus ($input)
+{
+	$result = array();
+	$state = 'headerSearch';
+	foreach (explode ("\n", $input) as $line)
+	{
+		$line = trim ($line);
+		switch ($state)
+		{
+			case 'headerSearch':
+				if (preg_match('/^Interface\s+Admin\s+Link\s+Proto\s+Local\s+Remote/i', $line))
+					$state = 'readPort';
+				break;
+			case 'readPort':
+				if (preg_match('/^{/', $line) || preg_match('/^\S+>/', $line))
+					break 2;
+				$field_list = preg_split('/\s+/', $line);
+				if (count ($field_list) < 3)
+					continue;
+				$portname = $field_list[0];
+				$admin_status = ($field_list[1] == 'up' || $field_list[1] == 'down') ? $field_list[1] : 'disabled';
+				$link_status = ($field_list[2] == 'up' || $field_list[2] == 'down') ? $field_list[2] : 'disabled';
+
+				$result[$portname] = array
+				(
+					'status' => $link_status,
+				);
+				break;
+		}
+	}
+	return $result;
+}
+
 function maclist_sort ($a, $b)
 {
 	if ($a['vid'] == $b['vid'])
@@ -3361,11 +3419,11 @@ function jun10ReadLLDPStatus ($input)
 	foreach (explode ("\n", $input) as $line)
 	{
 		$line = rtrim ($line);
-		if (preg_match ('/^Local Interface\s+Chassis Id\s+Port info\s+System Name$/', $line))
+		if (preg_match ('/^Local Interface.*\s+Chassis Id\s+Port info\s+System Name$/', $line))
 			$lldp_mode = TRUE;
 		elseif ($line == "")
 			$lldp_mode = FALSE;
-		elseif ($lldp_mode && preg_match ('/^(\S+)\s+([0-9a-f:]{17})\s+(.*?)\s+(\S+)\s*$/', $line, $m))
+		elseif ($lldp_mode && preg_match ('/^(\S+).*\s+([0-9a-f:]{17})\s+(.*?)\s+(\S+)\s*$/', $line, $m))
 			$ret[shortenIfName ($m[1])][] = array
 			(
 				'port' => $m[3],

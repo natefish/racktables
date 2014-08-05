@@ -35,7 +35,6 @@ $templateWidth[4] = 1;
 $templateWidth[5] = 1;
 
 define ('CHAP_OBJTYPE', 1);
-define ('CHAP_PORTTYPE', 2);
 // The latter matches both SunOS and Linux-styled formats.
 define ('RE_L2_IFCFG', '/^[0-9a-f]{1,2}(:[0-9a-f]{1,2}){5}$/i');
 define ('RE_L2_CISCO', '/^[0-9a-f]{4}(\.[0-9a-f]{4}){2}$/i');
@@ -278,6 +277,10 @@ function genericAssertion ($argname, $argtype)
 		return assertUIntArg ($argname);
 	case 'uint0':
 		return assertUIntArg ($argname, TRUE);
+	case 'decimal':
+		if (! preg_match ('/^\d+(\.\d+)?$/', assertStringArg ($argname)))
+			throw new InvalidRequestArgException ($argname, $sic[$argname], 'format error');
+		return $sic[$argname];
 	case 'inet':
 		return assertIPArg ($argname);
 	case 'inet4':
@@ -358,6 +361,7 @@ function genericAssertion ($argname, $argtype)
 		if (! in_array ($sic[$argname], array ('yes', 'no')))
 			throw new InvalidRequestArgException ($argname, $sic[$argname], 'Unknown value');
 		return $sic[$argname];
+	//tt branch modification
 	case 'check/yesno':
 		if (isset($sic[$argname]) && !($sic[$argname] == 'on'))
 			throw new InvalidRequestArgException ($argname, $sic[$argname], 'Unexpected checkbox value');
@@ -870,7 +874,7 @@ function ip6_mask ($prefix_len)
 // in the provided string, an empty string for an empty string or raise an exception.
 function l2addressForDatabase ($string)
 {
-	$string = strtoupper ($string);
+	$string = strtoupper (trim ($string));
 	$ret = '';
 	switch (TRUE)
 	{
@@ -1081,6 +1085,13 @@ function getRSUforRow ($rowData)
 		($counter['T'] + $counter['W'] + $counter['U'] + $counter['F']);
 }
 
+function string_insert_hrefs_callback ($m)
+{
+	$t_url_href    = 'href="' . rtrim($m[1], '.') . '"';
+	$s_url_replace = "<a ${t_url_href}>$m[1]</a> [<a ${t_url_href} target=\"_blank\">^</a>]";
+	return $s_url_replace;
+}
+
 # Detect URLs and email addresses in the string and replace them with href anchors
 # (adopted from MantisBT, core/string_api.php:string_insert_hrefs).
 function string_insert_hrefs ($p_string)
@@ -1126,12 +1137,7 @@ function string_insert_hrefs ($p_string)
 	$p_string = preg_replace_callback
 	(
 		$s_url_regex,
-		function ($m)
-		{
-			$t_url_href    = 'href="' . rtrim($m[1], '.') . '"';
-			$s_url_replace = "<a ${t_url_href}>$m[1]</a> [<a ${t_url_href} target=\"_blank\">^</a>]";
-			return $s_url_replace;
-		},
+		'string_insert_hrefs_callback',
 		$p_string
 	);
 
@@ -2790,6 +2796,7 @@ function cookOptgroups ($recordList, $object_type_id = 0, $existing_value = 0)
 	$ret = array();
 	$therest = array();
 	foreach ($recordList as $dict_key => $dict_value)
+		//tt branch modification
 		if ($dict_value['display'] == 'no')
 			continue;
 		else if (preg_match ('/^(.*)%(GPASS|GSKIP)%/', $dict_value['value'], $m))
@@ -3074,6 +3081,7 @@ function decodeObjectType ($objtype_id, $style = 'r')
 			'a' => readChapter (CHAP_OBJTYPE, 'a'),
 			'o' => readChapter (CHAP_OBJTYPE, 'o')
 		);
+	//tt branch modification
 	return $types[$style][$objtype_id]['value'];
 }
 
@@ -5231,6 +5239,7 @@ function getObjectTypeChangeOptions ($object_id)
 			)
 				continue 2; // next type ID
 		}
+		//tt branch modification
 		$ret[$test_id] = $text['value'];
 	}
 	return $ret;
@@ -6142,6 +6151,34 @@ function splitNetworkByMask ($netinfo, $dst_mask)
         $self (constructIPRange ($netinfo['ip_bin'], $netinfo['mask'] + 1), $dst_mask),
         $self (constructIPRange (ip_last ($netinfo), $netinfo['mask'] + 1), $dst_mask)
     );
+}
+
+// this function is used both to remember and to retrieve the last created entity's ID
+// it stores given id in the static var, and returns the stored value is called without args
+// used in plugins to make additional work on created entity in the chained ophandler
+// returns an array of realm-ID pairs
+function lastCreated ($realm = NULL, $id = NULL)
+{
+	static $last_ids = array();
+	if (isset ($realm) && isset ($id))
+		$last_ids[] = array('realm' => $realm, 'id' => $id);
+	return $last_ids;
+}
+
+// returns last id of a given type from lastCreated() result array
+function getLastCreatedId ($realm)
+{
+	foreach (array_reverse (lastCreated()) as $item)
+		if ($item['realm'] == $realm)
+			return $item['id'];
+}
+
+function formatPatchCableHeapAsPlainText ($heap)
+{
+	$text = "${heap['amount']} pcs: [${heap['end1_connector']}] ${heap['pctype']} [${heap['end2_connector']}]";
+	if ($heap['description'] != '')
+		$text .=  " (${heap['description']})";
+	return niftyString ($text, 512);
 }
 
 ?>

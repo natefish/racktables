@@ -42,6 +42,9 @@ $image['objectlog']['height'] = 200;
 $image['virtual']['path'] = 'pix/virtualresources.png';
 $image['virtual']['width'] = 218;
 $image['virtual']['height'] = 200;
+$image['cables']['path'] = 'pix/patch_cables.png';
+$image['cables']['width'] = 218;
+$image['cables']['height'] = 200;
 $image['download']['path'] = 'pix/download.png';
 $image['download']['width'] = 16;
 $image['download']['height'] = 16;
@@ -273,6 +276,7 @@ $image['html']['height'] = 16;
 $image['pencil']['path'] = 'pix/pencil-icon.png';
 $image['pencil']['width'] = 12;
 $image['pencil']['height'] = 12;
+//tt branch modification
 $image['edit']['path'] = 'pix/edit-icon-16x16.png';
 $image['edit']['width'] = 16;
 $image['edit']['height'] = 16;
