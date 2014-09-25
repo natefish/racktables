@@ -1,0 +1,91 @@
+
+/**************************
+ * Tab bar styles
+ **************************/
+div.pure-menu-horizontal.tabbar{
+	padding-top: 10px;
+	background-color: transparent;
+	border-bottom: 2px solid #345;
+}
+
+li.tab{
+	background-color: #F0F0F0;
+}
+
+li.tab.selected a{
+	background-color: #345;
+	color: white;
+	font-weight: bold;
+}
+
+li.tab.attn a{
+	color: white;
+	background: #ffa500;
+}
+.pure-menu li.tab a:hover, .pure-menu li.tab a:focus {
+    background: none repeat scroll 0% 0% darkgray;
+}
+
+/**************************
+ * Form styles
+ **************************/
+input:-moz-read-only { /* For Firefox */
+	border-color: #D3D3D3;
+    background-color: #FAFAFA;
+	color: #777;
+}
+
+input:read-only { 
+	border-color: #D3D3D3;
+    background-color: #FAFAFA;
+	color: #777;
+}
+
+  
+/**************************
+ * 
+ **************************/
+.disabled{
+	background-color: transparent;
+	border: none;
+	color: rgba(65, 65, 65, 1);
+}
+
+.dictionary_main{
+	padding-top: 15px;
+	padding-left: 25px;
+	font-size: 125%;
+}
+
+.dictionary_entry{
+	
+}
+
+.dictionary_table{
+
+}
+
+.chapter_name{
+	float: left;
+	min-width: 200px;
+}
+
+.chapter_words{
+	float: left;
+}
+
+.chapter_actions{
+	float: left;
+}
+
+.title{
+	font-weight: bold;
+}
+
+.icon{
+	margin: 5px;
+}
+
+th.sticker{
+	padding: 25px;
+}

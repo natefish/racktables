@@ -15,10 +15,12 @@ try {
 	switch ($requestedModule)
 	{
 	case 'interface':
-		require_once 'inc/interface.php';
 		// init.php has to be included after interface.php, otherwise the bits
 		// set by local.php get lost
+		// TT - Ignoring comment, this ordering allows for checking if function exists  with fucntion_exists in the core files and 
+		// (TT cont) overriding the function from the plugins directory if desired.
 		require_once 'inc/init.php';
+		require_once 'inc/interface.php';
 		prepareNavigation();
 		// Security context is built on the requested page/tab/bypass data,
 		// do not override.

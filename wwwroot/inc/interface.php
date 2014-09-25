@@ -86,11 +86,14 @@ function showLogoutURL ()
 	$https = (isset ($_SERVER['HTTPS']) and $_SERVER['HTTPS'] == 'on') ? 's' : '';
 	$port = (! in_array ($_SERVER['SERVER_PORT'], array (80, 443))) ? ':' . $_SERVER['SERVER_PORT'] : '';
 	$pathinfo = pathinfo ($_SERVER['REQUEST_URI']);
-	$dirname = $pathinfo['dirname'];
+	// tt branch modification - fix slash direction for IIS
+	$dirname = str_replace('\\', '/', $pathinfo['dirname']);
 	// add a trailing slash if the installation resides in a subdirectory
 	if ($dirname != '/')
 		$dirname .= '/';
-	printf ('http%s://logout@%s%s?logout', $https, $_SERVER['SERVER_NAME'], $dirname);
+		
+	//TT - Changed to support new format page renderer
+	return sprintf ('http%s://logout@%s%s?logout', $https, $_SERVER['SERVER_NAME'], $dirname);
 }
 
 $quick_links = NULL; // you can override this in your local.php, but first initialize it with getConfiguredQuickLinks()
@@ -104,29 +107,6 @@ function renderQuickLinks()
 	foreach ($quick_links as $link)
 		echo '<li><a href="' . $link['href'] . '">' . str_replace (' ', '&nbsp;', $link['title']) . '</a></li>';
 	echo '</ul>';
-}
-
-function renderInterfaceHTML ($pageno, $tabno, $payload)
-{
-?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head><title><?php echo getTitle ($pageno); ?></title>
-<?php printPageHeaders(); ?>
-</head>
-<body>
-<div class="maintable">
- <div class="mainheader">
-  <div style="float: right" class=greeting><a href='index.php?page=myaccount&tab=default'><?php global $remote_displayname; echo $remote_displayname ?></a> [ <a href='<?php showLogoutURL(); ?>'>logout</a> ]</div>
- <?php echo getConfigVar ('enterprise') ?> RackTables <a href="http://racktables.org" title="Visit RackTables site"><?php echo CODE_VERSION ?></a><?php renderQuickLinks() ?>
- </div>
- <div class="menubar"><?php showPathAndSearch ($pageno, $tabno); ?></div>
- <div class="tabbar"><?php showTabs ($pageno, $tabno); ?></div>
- <div class="msgbar"><?php showMessageOrError(); ?></div>
- <div class="pagebar"><?php echo $payload; ?></div>
-</div>
-</body>
-</html>
-<?php
 }
 
 // Main menu.
@@ -10293,4 +10273,78 @@ function renderPatchCableOIFCompatEditor()
 	echo '<br>';
 }
 
+//TT
+if(!function_exists('renderMenuBar'))
+{
+	function renderMenuBar ($pageno, $tabno)
+	{
+		showPathAndSearch ($pageno, $tabno);
+	}
+}
+
+//TT
+if(!function_exists('renderTabBar'))
+{
+	function renderTabBar ($pageno, $tabno)
+	{
+		showTabs ($pageno, $tabno);
+	}
+}
+
+//TT
+if(!function_exists('renderMsgBar'))
+{
+	function renderMsgBar ()
+	{
+		showMessageOrError();
+	}
+}
+
+//TT
+if(!function_exists('renderPageBar'))
+{
+	function renderPageBar ($payload)
+	{
+		echo $payload;
+	}
+}
+
+//TT - Moved to end to allow if(!function_exists('')){} for plugin overrides
+//TT - Formatted for readability, not efficiency
+if(!function_exists('renderInterfaceHTML'))
+{
+	function renderInterfaceHTML ($pageno, $tabno, $payload)
+	{
+		global $remote_displayname;
+		
+		echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">';
+		echo '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">';
+		echo '<head>';
+		echo '	<title>'.getTitle ($pageno).'</title>';
+				printPageHeaders();
+		echo '</head>';
+		echo '	<body>';
+		echo '		<div class="maintable">';
+		echo '			<div class="mainheader">';
+		echo '				<div style="float: right" class=greeting><a href="index.php?page=myaccount&tab=default">'.$remote_displayname.'</a> [ <a href="'.showLogoutURL().'">logout</a> ]</div>';
+		echo '				'.getConfigVar ('enterprise').' RackTables <a href="http://racktables.org" title="Visit RackTables site">'.CODE_VERSION.'</a>';
+							renderQuickLinks();
+		echo ' 			</div>';
+		echo '			<div class="menubar">';
+							renderMenuBar ($pageno, $tabno);
+		echo ' 			</div>';
+		echo '			<div class="tabbar">';
+							renderTabBar ($pageno, $tabno);
+		echo ' 			</div>';
+		echo '			<div class="msgbar">';
+							renderMsgBar ();
+		echo ' 			</div>';
+		echo '			<div class="pagebar">';
+							renderPageBar ($payload);
+		echo ' 			</div>';
+		echo '		</div>';
+		echo '	</body>';
+		echo '</html>';
+	}
+}
 ?>

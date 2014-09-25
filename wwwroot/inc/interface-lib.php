@@ -352,7 +352,7 @@ function getNiftySelect ($groupList, $select_attrs, $selected_id = NULL, $tree =
 		{
 			$ret .= "        '${groupname}': {";
 			foreach ($groupdata as $dict_key => $dict_value)
-				$ret .= "\"${dict_value}\":'${dict_key}', ";
+				$ret .= "\"${dict_value['value']}\":'${dict_key}', ";
 			$ret .= "},\n";
 		}
 		$ret .= "    };\n";
